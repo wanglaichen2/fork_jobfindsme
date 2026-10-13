@@ -1,7 +1,5 @@
 name: Create draft release
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
     inputs:
       tag:
@@ -11,6 +9,7 @@ permissions:
   contents: write
 jobs:
   draft:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,11 +20,7 @@ jobs:
           INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          if [ -n "${INPUT_TAG:-}" ]; then
-            TAG="$INPUT_TAG"
-          else
-            TAG="${GITHUB_REF_NAME}"
-          fi
+          TAG="$INPUT_TAG"
           case "$TAG" in
             v[0-9]*.[0-9]*.[0-9]*) ;;
             *) echo "Tag must look like v0.15.2, got: $TAG" >&2; exit 1 ;;
@@ -34,10 +29,6 @@ jobs:
             echo "Release $TAG already exists"
             gh release view "$TAG" --json isDraft,url
           else
-            gh release create "$TAG" --draft --title "$TAG" --notes "Draft desktop packages for $TAG.
-
-After Windows/macOS package workflows succeed on this commit, run **Attach verified desktop release** with each package run ID and this tag.
-
-Do not publish until both assets are attached and checksums are verified."
+            gh release create "$TAG" --draft --title "$TAG" --generate-notes
             echo "Created draft release $TAG"
           fi

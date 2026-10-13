@@ -5,7 +5,7 @@ on:
     branches: [main, codex/desktop-refactor]
     tags: ['v*']
 permissions:
-  contents: read
+  contents: write
 jobs:
   windows:
     runs-on: windows-latest
@@ -43,12 +43,24 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Compress-Archive -Path apps/desktop/release/windows/JobFindsMe -DestinationPath dist/JobFindsMe-windows-x64.zip -Force
-          Get-FileHash dist/JobFindsMe-windows-x64.zip -Algorithm SHA256 | Format-List | Out-File dist/SHA256.txt
+          Copy-Item dist/JobFindsMe-windows-x64.zip dist/windows-x64.zip -Force
+          Get-FileHash dist/windows-x64.zip -Algorithm SHA256 | Format-List | Out-File dist/windows-x64.SHA256.txt
+          Copy-Item dist/windows-x64.SHA256.txt dist/SHA256.txt -Force
           Copy-Item apps/desktop/release/windows/*.png dist -ErrorAction SilentlyContinue
       - uses: actions/upload-artifact@v4
         with:
           name: JobFindsMe-windows-x64
           path: |
             dist/JobFindsMe-windows-x64.zip
+            dist/windows-x64.zip
             dist/SHA256.txt
             dist/*.png
+      - name: Publish Windows asset to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/windows-x64.zip
+            dist/windows-x64.SHA256.txt
+          fail_on_unmatched_files: true
+          generate_release_notes: true

@@ -5,7 +5,7 @@ on:
     branches: [main, codex/desktop-refactor]
     tags: ['v*']
 permissions:
-  contents: read
+  contents: write
 jobs:
   macos:
     runs-on: macos-15
@@ -43,7 +43,7 @@ jobs:
         run: |
           mkdir -p dist
           ditto -c -k --sequesterRsrc --keepParent apps/desktop/release/mac-unpacked/JobFindsMe.app dist/mac-arm64.zip
-          shasum -a 256 dist/mac-arm64.zip > dist/SHA256.txt
+          shasum -a 256 dist/mac-arm64.zip | tee dist/mac-arm64.SHA256.txt dist/SHA256.txt >/dev/null
           cp apps/desktop/release/mac-unpacked/*.png dist/ 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
@@ -52,3 +52,12 @@ jobs:
             dist/mac-arm64.zip
             dist/SHA256.txt
             dist/*.png
+      - name: Publish macOS asset to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/mac-arm64.zip
+            dist/mac-arm64.SHA256.txt
+          fail_on_unmatched_files: true
+          generate_release_notes: true
