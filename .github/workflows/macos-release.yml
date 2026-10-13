@@ -2,7 +2,8 @@ name: macOS desktop package
 on:
   workflow_dispatch:
   push:
-    branches: [codex/desktop-refactor]
+    branches: [main, codex/desktop-refactor]
+    tags: ['v*']
 permissions:
   contents: read
 jobs:
@@ -39,14 +40,15 @@ jobs:
       - run: node scripts/smoke-desktop.mjs
         working-directory: apps/desktop
       - name: Archive tested application
-        working-directory: apps/desktop/release/mac-unpacked
         run: |
-          ditto -c -k --sequesterRsrc --keepParent JobFindsMe.app mac-arm64.zip
-          shasum -a 256 mac-arm64.zip > SHA256.txt
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent apps/desktop/release/mac-unpacked/JobFindsMe.app dist/mac-arm64.zip
+          shasum -a 256 dist/mac-arm64.zip > dist/SHA256.txt
+          cp apps/desktop/release/mac-unpacked/*.png dist/ 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: JobFindsMe-mac-arm64
           path: |
-            apps/desktop/release/mac-unpacked/*.zip
-            apps/desktop/release/mac-unpacked/*.txt
-            apps/desktop/release/mac-unpacked/*.png
+            dist/mac-arm64.zip
+            dist/SHA256.txt
+            dist/*.png
